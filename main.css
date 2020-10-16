@@ -1,0 +1,10 @@
+.player {
+  display: inline-block;
+  border: 1px solid black;
+}
+html {
+  font-family: 'arial', sans-serif;
+}
+#mainCanvas {
+  border: 1px solid black;
+}
