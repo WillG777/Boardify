@@ -23,7 +23,14 @@
   <button id="btnAddPlayer" @click="addPlayer">Add Player</button>
   <br><br>
   <label for="boardUpload">Add Board: </label><input type="file" id="boardUpload" @change="handleUpload($event, 'board')"><br>
-  <label for="pieceUpload">Add Game Piece: </label><input type="file" id="pieceUpload" @change="handleUpload($event, 'piece')">
+  <label for="pieceUpload">Add Game Piece: </label><input type="file" id="pieceUpload" @change="handleUpload($event, 'piece')"><br>
+  <button id="btnCreateDeck" @click="creatingDeck=true">Create Deck</button>
+  <div id="deckCreator" v-if="creatingDeck">
+    <label for="deckName">Deck name: </label><input type="text" id="deckName">
+    <card-adder v-for="_ in Array(numCardAdders)"></card-adder>
+    <button id="btnAddCard" @click="++numCardAdders">New Card</button>
+    <button>Add this deck</button>
+  </div>
   <canvas id="mainCanvas" :width="board.width" :height="board.height"></canvas>
 </div>
 

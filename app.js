@@ -12,6 +12,37 @@ Vue.component('player-info', {
   props: ['name', 'info']
 });
 
+Vue.component('card-adder', {
+  template: `
+    <div class="cardAdder">
+      Type:
+      <input type="radio" value="text" v-model="type"><label>Text</label>
+      <input type="radio" value="image" v-model="type"><label>Image</label>
+      <div v-if="type === 'image'">
+        Front: <input type="file"><br>
+        Back: <input type="file">
+      </div>
+      <div v-if="type === 'text'">
+        Front: <input type="text" v-model="frontText"><br>
+        Back: <input type="text" v-model="backText">
+      </div>
+      <button @click="addCard">Add this card</button>
+    </div>
+  `,
+  data() {return {
+    type: 'image',
+    frontImage: '',
+    backImage: '',
+    frontText: '',
+    backText: ''
+  }},
+  methods: {
+    addCard() {
+
+    }
+  }
+
+});
 
 const app = new Vue({
   el: '#app',
@@ -26,7 +57,10 @@ const app = new Vue({
       width: 1000, // TODO make this responsive based on screen size
       height: 700
     },
-    pieces: [] // array of piece images
+    pieces: [], // array of piece images
+    decks: [], // objects of form {name: '', cards: []}
+    numCardAdders: 1,
+    creatingDeck: false
   },
   methods: {
     addPlayer() {
@@ -73,7 +107,7 @@ const app = new Vue({
     },
     removeImage(e) {
       this.image = '';
-    }
+    },
   },
   mounted() {
     canvas = new fabric.Canvas('mainCanvas');
