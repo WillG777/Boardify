@@ -77,7 +77,9 @@ Vue.component('deck-editor', {
     <div class="deckEditor">
       <button @click="active = true" v-if="!active">Edit Deck: {{name || 'New Deck'}}</button>
       <div v-if="active">
-        <label for="deckName">Deck name: </label><input type="text" id="deckName" v-model="name">
+        <label for="deckName">Deck name: </label><input type="text" id="deckName" v-model="name"><br>
+        <label for="cardWidth">Card width: </label><input type="number" id="cardWidth" v-model="cardWidth">
+        <label for="cardHeight">Card height: </label><input type="number" id="cardHeight" v-model="cardHeight"><br>
         <card-adder :deck-id="deckId" v-for="(card, index) in cards" v-bind="card" :key="index" :index="index"></card-adder>
         <button @click="newCard">New Card</button>
         <button @click="closeDeck">Done</button>
@@ -88,7 +90,9 @@ Vue.component('deck-editor', {
   data() {return {
     cards: [],
     name: '',
-    active: false
+    active: false,
+    cardWidth: 200,
+    cardHeight: 320
   }},
   methods: {
     closeDeck() {
