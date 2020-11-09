@@ -22,10 +22,11 @@
   </div>
   <button id="btnAddPlayer" @click="addPlayer">Add Player</button>
   <br><br>
-  <label for="boardUpload">Add Board: </label><input type="file" id="boardUpload" @change="handleUpload($event, 'board')"><br>
-  <label for="pieceUpload">Add Game Piece: </label><input type="file" id="pieceUpload" @change="handleUpload($event, 'piece')"><br>
-  <deck-editor v-for="(deck, deckId) in decks" :deck-id="+deckId" :key="+deckId"></deck-editor>
+  <label for="boardUpload">Add Board: </label><input type="file" accept="image/*" id="boardUpload" @change="handleUpload($event, 'board')"><br>
+  <label for="pieceUpload">Add Game Piece: </label><input type="file" accept="image/*" id="pieceUpload" @change="handleUpload($event, 'piece')"><br>
+  <deck-editor v-for="(deck, deckId) in decks" :deck-id="+deckId" :key="deckId+'-editor'"></deck-editor>
   <button id="btnCreateDeck" @click="createDeck" v-if="decks[0].cards.length > 0">Create New Deck</button><br>
+  <deck-user v-for="(deck, deckId) in decks" :deck-id="+deckId" :key="deckId+'-user'" v-if="deck.name !== ''"></deck-user>
   <canvas id="mainCanvas" :width="board.width" :height="board.height"></canvas>
 </div>
 

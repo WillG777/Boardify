@@ -21,7 +21,7 @@ Vue.component('card-adder', {
       <input type="radio" value="image" v-model="card.type"><label>Image</label>
       <div v-if="card.type === 'image'">
         Front: <input type="file" accept="image/*" @change="uploadImage($event, true)"><br>
-        Back: <input type="file" accept="image /*" @change="uploadImage($event, false)">
+        Back: <input type="file" accept="image/*" @change="uploadImage($event, false)">
       </div>
       <div v-if="card.type === 'text'">
         Front: <input type="text" v-model="card.frontText" @blur="updateCard"><br>
@@ -114,6 +114,50 @@ Vue.component('deck-editor', {
   }
 });
 
+Vue.component('deck-user', {
+  template: `
+    <div class="deckUser">
+      <button v-if="!active" @click="active=true">Use Deck: {{deckName}}</button>
+      <div v-if="active">
+        <p>Actions for deck: {{deckName}}</p>
+        <button @click="shuffle">Shuffle</button>
+        <button @click="dealUpCard">Deal Up Card</button>
+        <button @click="dealDownCard">Deal Down Card</button>
+        <button @click="active=false">Done</button>
+      </div>
+    </div>
+  `,
+  props: {deckId: {type: Number, required: true}},
+  data() {return {
+    active: false,
+    cardIndex: 0
+  }},
+  computed: {
+    deckName() {return this.$root.decks[this.deckId].name}
+  },
+  methods: {
+    shuffle() {
+      this.$root.decks[this.deckId].cards = shuffle(this.$root.decks[this.deckId].cards);
+    },
+    dealUpCard() {
+      const deck = this.$root.decks[this.deckId];
+      const card = deck.cards[this.cardIndex++];
+      fabric.Image.fromURL(card.frontImage, img => {
+        console.log('Using Canvas: ',canvas)
+        canvas.add(img)
+        console.log('Using image object:',img);
+        img.set({left: 0, top: 0});
+        img.scaleToHeight(deck.cardHeight);
+        img.scaleToWidth(deck.cardWidth);
+        canvas.add(img);
+      })
+    },
+    dealDownCard() {
+
+    }
+  }
+});
+
 const app = new Vue({
   el: '#app',
   data: {
@@ -138,12 +182,12 @@ const app = new Vue({
       this.players.push({name: 'Name Here', info: 'Info Here'})
     },
     createRoom() {
-      // TODO: use backend script to make room id
       fetch(baseUrl+'/room')
       .then(res => res.json())
       .then(data => this.roomId = data.room)
     },
     createDeck() {
+      // TODO get next deckID from backend
       Vue.set(this.decks, ++this.curDeckId, {name: '', cards: [], cardWidth: 200, cardHeight: 320});
     },
     handleUpload(e, type) {
