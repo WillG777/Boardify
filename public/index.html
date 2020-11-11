@@ -27,7 +27,8 @@
   <deck-editor v-for="(deck, deckId) in decks" :deck-id="+deckId" :key="deckId+'-editor'"></deck-editor>
   <button id="btnCreateDeck" @click="createDeck" v-if="decks[0].cards.length > 0">Create New Deck</button><br>
   <deck-user v-for="(deck, deckId) in decks" :deck-id="+deckId" :key="deckId+'-user'" v-if="deck.name !== ''"></deck-user>
-  <canvas id="mainCanvas" :width="board.width" :height="board.height"></canvas>
+  <canvas id="openCanvas" :width="board.width" :height="board.height"></canvas>
+  <canvas id="secretCanvas" width="700" height="500"></canvas>
 </div>
 
 </body>

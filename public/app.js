@@ -1,6 +1,9 @@
-var canvas;
 const qs = e=>document.querySelector(e);
 const qsa = e=>document.querySelectorAll(e);
+const pick = (...props) => o => props.reduce((a, e) => ({ ...a, [e]: o[e] }), {}); // TODO use this
+// works like pick('prop1', 'prop2')(obj)
+// from https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties
+
 const baseUrl = 'http://localhost:4001'
 
 Vue.component('player-info', {
@@ -98,7 +101,9 @@ Vue.component('deck-editor', {
     closeDeck() {
       this.$root.decks[this.deckId] = {
         cards: this.cards,
-        name: this.name
+        name: this.name,
+        cardWidth: this.cardWidth,
+        cardHeight: this.cardHeight
       };
       this.active = false;
     },
@@ -142,18 +147,29 @@ Vue.component('deck-user', {
     dealUpCard() {
       const deck = this.$root.decks[this.deckId];
       const card = deck.cards[this.cardIndex++];
-      fabric.Image.fromURL(card.frontImage, img => {
-        console.log('Using Canvas: ',canvas)
-        canvas.add(img)
-        console.log('Using image object:',img);
-        img.set({left: 0, top: 0});
-        img.scaleToHeight(deck.cardHeight);
-        img.scaleToWidth(deck.cardWidth);
-        canvas.add(img);
-      })
+      if (card.type === 'image')
+        fabric.Image.fromURL(card.frontImage, img => {
+          img.set({left: 0, top: 0});
+          img.scaleToHeight(deck.cardHeight);
+          window.canvas.add(img);
+        });
+      else if (card.type === 'text') {
+        let text = new fabric.Text(card.frontText, {
+          hasBorders: true,
+          borderColor: 'black',
+          padding: deck.cardHeight / 2
+        });
+        window.canvas.add(text)
+      }
     },
     dealDownCard() {
-
+      const deck = this.$root.decks[this.deckId];
+      const card = deck.cards[this.cardIndex++];
+      fabric.Image.fromURL(card.frontImage, img => {
+        img.set({left: 0, top: 0});
+        img.scaleToHeight(deck.cardHeight);
+        window.secret.add(img);
+      });
     }
   }
 });
@@ -207,8 +223,8 @@ const app = new Vue({
             vm.board.image = e.target.result;
             fabric.Image.fromURL(vm.board.image, img => {
               img.set({left: 0, top: 0})
-              img.scaleToHeight(canvas.height);
-              canvas.add(img);
+              img.scaleToHeight(window.canvas.height);
+              window.canvas.add(img);
             });
             break;
           case 'piece':
@@ -216,7 +232,7 @@ const app = new Vue({
             fabric.Image.fromURL(e.target.result, img => {
               img.set({left: 0, top: 0})
               img.scaleToHeight(100);
-              canvas.add(img);
+              window.canvas.add(img);
             });
             break;
           default:
@@ -230,7 +246,8 @@ const app = new Vue({
     },
   },
   mounted() {
-    canvas = new fabric.Canvas('mainCanvas');
+    window.canvas = new fabric.Canvas('openCanvas');
+    window.secret = new fabric.Canvas('secretCanvas');
   }
 });
 
