@@ -174,6 +174,12 @@ Vue.component('deck-user', {
   }
 });
 
+Vue.component('dice-editor', {
+  template: `
+    
+  `
+});
+
 const app = new Vue({
   el: '#app',
   data: {
