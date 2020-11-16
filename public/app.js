@@ -176,9 +176,99 @@ Vue.component('deck-user', {
 
 Vue.component('dice-editor', {
   template: `
-    
-  `
+    <div class="diceEditor">
+      <button v-if="!active" @click="active=true">Edit dice: {{name || 'New Dice'}}</button>
+      <div v-if="active">
+        Name: <input type="text" v-model="name">
+        <select v-model="type">
+          <option disabled value="">Select type...</option>
+          <option value="number">Numbered range</option>
+          <option value="text">Custom text</option>
+          <option value="image">Custom images</option>
+        </select>
+        <div v-if="type === 'number'">
+          Min: <input type="number" value=1 v-model="minNum">
+          Max: <input type="number" value=6 v-model="maxNum">
+        </div>
+        <div v-if="type === 'text'">
+          Input values separated by commas with no spaces:<br>
+          <input type="text" v-model="customText">
+        </div>
+        <div v-if="type === 'image'">
+          Add images for each side:<br>
+          <input type="file" accept="image/*" multiple>
+        </div>
+        <label for="numRepeat">How many of these?</label><input type="number" name="numRepeat" v-model="numRepeat" value=1>
+        <button @click="saveDice">Done</button>
+      </div>
+    </div>
+  `,
+  props: {diceId: {type: Number, default: 0}},
+  data() {return {
+    type: '',
+    name: '',
+    minNum: 1,
+    maxNum: 6,
+    customText: '',
+    numRepeat: 1,
+    active: false
+  }},
+  computed: {
+    customArray() {
+      return this.customText.split(',')
+    }
+  },
+  methods: {
+    saveDice() {
+      this.active = false;
+      this.$root.dice[this.diceId] = pick('type', 'name', 'minNum', 'maxNum', 'customArray', 'numRepeat')(this);
+    }
+  }
 });
+
+Vue.component('dice-roller', {
+  template: `
+    <div class="diceRoller">
+      <button @click="active=true" v-if="!active">Use dice: {{name || 'New Dice'}}</button>
+      <div v-if="active">
+        <button @click="rollOnce">Roll once</button>
+        <button @click="rollAll">Roll all {{numRepeat}}</button>
+      </div>
+    </div>
+  `,
+  props: {
+    name: String,
+    minNum: Number,
+    maxNum: Number,
+    numRepeat: Number,
+    customArray: Object,
+    type: String
+  },
+  data() {return {
+    active: false
+  }},
+  methods: {
+    rollOnce() {
+      var result;
+      switch(type) {
+        case 'number':
+          result = parseInt(Math.random()*(this.minNum - this.maxNum + 1)); break;
+        case 'text':
+          result = this.customArray[parseInt(Math.random()*result.length)]; break;
+        case 'image': // TODO implement this
+          break;
+      }
+      let text = new fabric.Text(result, {
+        hasBorders: true,
+        borderColor: 'black'
+      });
+      window.canvas.add(text);
+    },
+    rollAll() {
+
+    }
+  }
+})
 
 const app = new Vue({
   el: '#app',
@@ -197,6 +287,13 @@ const app = new Vue({
     decks: {
       '0': {name: '', cards: []}
     }, // objects of form {name: '', cards: []}
+    dice: [{
+      type: 'number',
+      minNum: 1,
+      maxNum: 6,
+      name: '1-6',
+      numRepeat: 1
+    }],
     curDeckId: 0
   },
   methods: {
@@ -204,7 +301,7 @@ const app = new Vue({
       this.players.push({name: 'Name Here', info: 'Info Here'})
     },
     createRoom() {
-      fetch(baseUrl+'/room')
+      fetch(baseUrl+'/room', {method: 'POST'})
       .then(res => res.json())
       .then(data => this.roomId = data.room)
     },
@@ -212,6 +309,15 @@ const app = new Vue({
       // TODO get next deckID from backend
       Vue.set(this.decks, ++this.curDeckId, {name: '', cards: [], cardWidth: 200, cardHeight: 320});
     },
+    createDice() {
+      dice.push({
+        type: 'number',
+        minNum: 1,
+        maxNum: 6,
+        name: '1-6',
+        numRepeat: 1
+      });
+    }
     handleUpload(e, type) {
       var files = e.target.files || e.dataTransfer.files;
       if (!files.length) return;
@@ -263,4 +369,10 @@ function shuffle(arr) {
     newArr.push(arr.splice(parseInt(Math.random()*arr.length), 1)[0]);
   }
   return newArr;
+}
+
+window.onbeforeunload = e => {
+  if(app.roomId) fetch(baseUrl+'/room/'+app.roomId, {
+    method: 'DELETE'
+  });
 }
