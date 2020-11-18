@@ -30,8 +30,10 @@
   <deck-editor v-for="(deck, deckId) in decks" :deck-id="+deckId" :key="deckId+'-editor'"></deck-editor>
   <deck-user v-for="(deck, deckId) in decks" :deck-id="+deckId" :key="deckId+'-user'" v-if="deck.name !== ''"></deck-user>
 
+  <button @click="createDice" v-if="dice[0].type">Create Dice</button>
   <dice-editor v-for="(die, index) in dice" :key="'dice-'+index+'-editor'" :dice-id="index"></dice-editor>
-  <dice-roller v-for="(die, index) in dice" :key="`dice-${index}-roller`" v-bind="die"></dice-roller>
+  <dice-roller v-for="(die, index) in dice" :key="`dice-${index}-roller`" v-bind="die" v-if="die.type"></dice-roller>
+
   <canvas id="openCanvas" :width="board.width" :height="board.height"></canvas>
   <canvas id="secretCanvas" width="700" height="500"></canvas>
 </div>

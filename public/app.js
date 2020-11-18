@@ -1,10 +1,37 @@
 const qs = e=>document.querySelector(e);
 const qsa = e=>document.querySelectorAll(e);
-const pick = (...props) => o => props.reduce((a, e) => ({ ...a, [e]: o[e] }), {}); // TODO use this
+const pick = (...props) => o => props.reduce((a, e) => ({ ...a, [e]: o[e] }), {});
 // works like pick('prop1', 'prop2')(obj)
 // from https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties
 
 const baseUrl = 'http://localhost:4001'
+
+// always draw Fabric text box border
+// https://stackoverflow.com/questions/51233082/draw-border-on-fabric-textbox-when-its-not-selected
+var originalRender = fabric.Textbox.prototype._render;
+fabric.Textbox.prototype._render = function(ctx) {
+  originalRender.call(this, ctx);
+  //Don't draw border if it is active(selected/ editing mode)
+  if (this.active) return;
+  if(this.showTextBoxBorder){
+    var w = this.width + this.padding*2,
+      h = this.height + this.padding*2,
+      x = -this.width / 2 - this.padding,
+      y = -this.height / 2 - this.padding;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + w, y);
+    ctx.lineTo(x + w, y + h);
+    ctx.lineTo(x, y + h);
+    ctx.lineTo(x, y);
+    ctx.closePath();
+    var stroke = ctx.strokeStyle;
+    ctx.strokeStyle = this.textboxBorderColor;
+    ctx.stroke();
+    ctx.strokeStyle = stroke;
+  }
+}
+fabric.Textbox.prototype.cacheProperties = fabric.Textbox.prototype.cacheProperties.concat('active');
 
 Vue.component('player-info', {
   template: `
@@ -147,6 +174,12 @@ Vue.component('deck-user', {
     dealUpCard() {
       const deck = this.$root.decks[this.deckId];
       const card = deck.cards[this.cardIndex++];
+      if (card === undefined) {
+        if (confirm("You've reached the end of the deck. Start from the beginning?")) {
+          this.cardIndex = 0;
+        }
+        return;
+      }
       if (card.type === 'image')
         fabric.Image.fromURL(card.frontImage, img => {
           img.set({left: 0, top: 0});
@@ -154,10 +187,12 @@ Vue.component('deck-user', {
           window.canvas.add(img);
         });
       else if (card.type === 'text') {
-        let text = new fabric.Text(card.frontText, {
+        let text = new fabric.Textbox(card.frontText, {
           hasBorders: true,
           borderColor: 'black',
-          padding: deck.cardHeight / 2
+          showTextBoxBorder: true,
+          textboxBorderColor: 'black',
+          padding: deck.cardHeight / 2 - 20
         });
         window.canvas.add(text)
       }
@@ -177,7 +212,7 @@ Vue.component('deck-user', {
 Vue.component('dice-editor', {
   template: `
     <div class="diceEditor">
-      <button v-if="!active" @click="active=true">Edit dice: {{name || 'New Dice'}}</button>
+      <button v-if="!active" @click="active=true">Edit Dice: {{name || 'New Dice'}}</button>
       <div v-if="active">
         Name: <input type="text" v-model="name">
         <select v-model="type">
@@ -187,8 +222,8 @@ Vue.component('dice-editor', {
           <option value="image">Custom images</option>
         </select>
         <div v-if="type === 'number'">
-          Min: <input type="number" value=1 v-model="minNum">
-          Max: <input type="number" value=6 v-model="maxNum">
+          Min: <input type="number" v-model.number="minNum">
+          Max: <input type="number" v-model.number="maxNum">
         </div>
         <div v-if="type === 'text'">
           Input values separated by commas with no spaces:<br>
@@ -221,7 +256,8 @@ Vue.component('dice-editor', {
   methods: {
     saveDice() {
       this.active = false;
-      this.$root.dice[this.diceId] = pick('type', 'name', 'minNum', 'maxNum', 'customArray', 'numRepeat')(this);
+      this.numRepeat = parseInt(this.numRepeat);
+      Vue.set(this.$root.dice, this.diceId, pick('type', 'name', 'minNum', 'maxNum', 'customArray', 'numRepeat')(this))
     }
   }
 });
@@ -231,8 +267,9 @@ Vue.component('dice-roller', {
     <div class="diceRoller">
       <button @click="active=true" v-if="!active">Use dice: {{name || 'New Dice'}}</button>
       <div v-if="active">
-        <button @click="rollOnce">Roll once</button>
-        <button @click="rollAll">Roll all {{numRepeat}}</button>
+        <button @click="rollOnce(0)">Roll once</button>
+        <button @click="rollAll" v-if="numRepeat > 1">Roll all {{numRepeat}}</button>
+        <button @click="active=false">Done</button>
       </div>
     </div>
   `,
@@ -241,31 +278,46 @@ Vue.component('dice-roller', {
     minNum: Number,
     maxNum: Number,
     numRepeat: Number,
-    customArray: Object,
+    customArray: Array,
     type: String
   },
   data() {return {
     active: false
   }},
   methods: {
-    rollOnce() {
+    rollOnce(posX=0) {
       var result;
-      switch(type) {
+      switch(this.type) {
         case 'number':
-          result = parseInt(Math.random()*(this.minNum - this.maxNum + 1)); break;
+          result = parseInt(Math.random()*(this.maxNum - this.minNum + 1) + this.minNum); break;
         case 'text':
-          result = this.customArray[parseInt(Math.random()*result.length)]; break;
+          result = this.customArray[parseInt(Math.random()*this.customArray.length)]; break;
         case 'image': // TODO implement this
           break;
+        default:
+          throw new Error(`Type ${this.type} is not supported for dice rolling`);
       }
-      let text = new fabric.Text(result, {
-        hasBorders: true,
-        borderColor: 'black'
-      });
-      window.canvas.add(text);
+      console.log(`Adding dice with result:`,result,'And position',posX);
+      this.addDice(result, posX);
     },
     rollAll() {
-
+      // TODO make dice show up at different positions, add padding
+      var posX=0;
+      for (var i=0; i<this.numRepeat; i++) {
+        this.rollOnce(posX)
+        posX += 50;
+      }
+    },
+    addDice(result, posX) {
+      var text = new fabric.Textbox(result.toString(), {
+        hasBorders: true,
+        borderColor: 'black',
+        showTextBoxBorder: true,
+        textboxBorderColor: 'black',
+        padding: 10
+      });
+      text.set({left: posX, top: 0});
+      window.canvas.add(text);
     }
   }
 })
@@ -287,13 +339,15 @@ const app = new Vue({
     decks: {
       '0': {name: '', cards: []}
     }, // objects of form {name: '', cards: []}
-    dice: [{
-      type: 'number',
+    dice: [
+      {
+      type: '',
       minNum: 1,
       maxNum: 6,
-      name: '1-6',
+      name: '',
       numRepeat: 1
-    }],
+      }
+    ],
     curDeckId: 0
   },
   methods: {
@@ -310,14 +364,21 @@ const app = new Vue({
       Vue.set(this.decks, ++this.curDeckId, {name: '', cards: [], cardWidth: 200, cardHeight: 320});
     },
     createDice() {
-      dice.push({
-        type: 'number',
+      this.dice.push({
+        type: '',
         minNum: 1,
         maxNum: 6,
-        name: '1-6',
+        name: '',
         numRepeat: 1
       });
-    }
+    },
+    savePack() {
+      var pack = JSON.stringify(pick('board', 'pieces', 'decks', 'dice')(this));
+      fetch(baseUrl+'/pack', {
+        method: 'POST',
+        body: pack
+      })
+    },
     handleUpload(e, type) {
       var files = e.target.files || e.dataTransfer.files;
       if (!files.length) return;
@@ -356,10 +417,18 @@ const app = new Vue({
     removeImage(e) {
       this.image = '';
     },
+    removeObject() {
+      canvas.remove(canvas.getActiveObject());
+    }
   },
   mounted() {
     window.canvas = new fabric.Canvas('openCanvas');
     window.secret = new fabric.Canvas('secretCanvas');
+
+    // have to do this with vanillaJS so event fires even when no focus on an element
+    window.addEventListener('keyup', e => {
+      if (e.key === 'Delete' || e.key === 'Backspace') this.removeObject()
+    })
   }
 });
 

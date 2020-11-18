@@ -14,6 +14,10 @@ const db = new sqlite3.Database('./database.sqlite')
 db.run(`CREATE TABLE IF NOT EXISTS Rooms (
   room_id TEXT not null primary key,
   num_players INTEGER not null default 1
+)`);
+db.run(`CREATE TABLE IF NOT EXISTS Packs (
+  pack_id INTEGER not null primary key,
+  data TEXT not null
 )`)
 
 app.post('/room', (req, res, next) => {
@@ -41,6 +45,12 @@ app.delete('/room/:roomId', (req, res, next) => {
         res.status(200).send(row.num_players);
       }
     })
+  })
+});
+
+app.post('/pack', (req, res, next) => {
+  db.run(`INSERT INTO Packs (data) VALUES $data`, {$data: req.body}, function(err) {
+    res.status(201).send(this.lastID)
   })
 })
 
