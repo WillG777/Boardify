@@ -34,6 +34,9 @@
   <dice-editor v-for="(die, index) in dice" :key="'dice-'+index+'-editor'" :dice-id="index"></dice-editor>
   <dice-roller v-for="(die, index) in dice" :key="`dice-${index}-roller`" v-bind="die" v-if="die.type"></dice-roller>
 
+  Game name: <input type="text" v-model="gameName">
+  <button @click="savePack">Save this Game Pack</button>
+
   <canvas id="openCanvas" :width="board.width" :height="board.height"></canvas>
   <canvas id="secretCanvas" width="700" height="500"></canvas>
 </div>

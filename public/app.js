@@ -348,7 +348,9 @@ const app = new Vue({
       numRepeat: 1
       }
     ],
-    curDeckId: 0
+    curDeckId: 0,
+    packId: null,
+    gameName: ''
   },
   methods: {
     addPlayer() {
@@ -374,10 +376,18 @@ const app = new Vue({
     },
     savePack() {
       var pack = JSON.stringify(pick('board', 'pieces', 'decks', 'dice')(this));
-      fetch(baseUrl+'/pack', {
-        method: 'POST',
-        body: pack
-      })
+      if (!this.packId) {
+        fetch(baseUrl+'/pack', {
+          method: 'POST',
+          body: pack
+        }).then(res => {this.packId = res.json().packId})
+      } else {
+        fetch(baseUrl+'/pack/'+this.packId, {
+          method: 'PUT',
+          body: pack
+        })
+      }
+
     },
     handleUpload(e, type) {
       var files = e.target.files || e.dataTransfer.files;
@@ -440,8 +450,11 @@ function shuffle(arr) {
   return newArr;
 }
 
+// when window closes, send DELETE request to /room
 window.onbeforeunload = e => {
+  e.preventDefault();
   if(app.roomId) fetch(baseUrl+'/room/'+app.roomId, {
     method: 'DELETE'
   });
+  e.returnValue = ''; return '';
 }
