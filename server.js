@@ -1,6 +1,6 @@
 const express = require('express');
 // const cors = require('cors');
-// const bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
 const morgan = require('morgan');
 const sqlite3 = require('sqlite3');
 
@@ -9,6 +9,7 @@ app.use(express.static(__dirname+'/public/'))
 // app.use(bodyParser());
 // app.use(cors());
 app.use(morgan('dev'));
+const jsonParser = bodyParser.json();
 
 const db = new sqlite3.Database('./database.sqlite')
 db.run(`CREATE TABLE IF NOT EXISTS Rooms (
@@ -17,6 +18,7 @@ db.run(`CREATE TABLE IF NOT EXISTS Rooms (
 )`);
 db.run(`CREATE TABLE IF NOT EXISTS Packs (
   pack_id INTEGER not null primary key,
+  name TEXT,
   data TEXT not null
 )`)
 
@@ -56,14 +58,20 @@ app.delete('/room/:roomId', (req, res, next) => {
   })
 });
 
-app.post('/pack', (req, res, next) => {
-  db.run(`INSERT INTO Packs (data) VALUES $data`, {$data: req.body}, function(err) {
+app.post('/pack', jsonParser, (req, res, next) => {
+  db.run(`INSERT INTO Packs (name, data) VALUES ($name, $data)`, {$data: JSON.stringify(req.body), $name: req.body.gameName}, function(err) {
+    if (err) {
+      console.error(err);
+      return res.sendStatus(400);
+    }
+    console.log('Created Pack with ID: ',this.lastID);
     res.status(201).send({packId: this.lastID})
   })
 });
 
-app.put('/pack/:id', (req, res, next) => {
-  db.run(`UPDATE Packs SET data=$data WHERE pack_id=$packId`, {$data: req.body, $packId: req.params.id}, err => {
+app.put('/pack/:id', jsonParser, (req, res, next) => {
+  db.run(`UPDATE Packs SET name=$name, data=$data WHERE pack_id=$packId`, {$data: JSON.stringify(req.body), $packId: req.params.id. $name: req.body.gameName}, function(err) {
+    console.log('Updated pack with ID: ',this.lastID);
     res.sendStatus(err ? 400 : 200)
   })
 })

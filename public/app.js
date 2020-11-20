@@ -375,15 +375,25 @@ const app = new Vue({
       });
     },
     savePack() {
-      var pack = JSON.stringify(pick('board', 'pieces', 'decks', 'dice')(this));
+      var pack = JSON.stringify(pick('board', 'pieces', 'decks', 'dice', 'gameName')(this));
+      var vm = this;
+      console.log('Saving pack: ',pack);
+
       if (!this.packId) {
         fetch(baseUrl+'/pack', {
           method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
           body: pack
-        }).then(res => {this.packId = res.json().packId})
+        }).then(res => res.json())
+        .then(res => vm.packId = res.packId);
       } else {
         fetch(baseUrl+'/pack/'+this.packId, {
           method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
           body: pack
         })
       }
