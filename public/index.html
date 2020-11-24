@@ -35,7 +35,14 @@
   <dice-roller v-for="(die, index) in dice" :key="`dice-${index}-roller`" v-bind="die" v-if="die.type"></dice-roller>
 
   Game name: <input type="text" v-model="gameName">
-  <button @click="savePack">Save this Game Pack</button>
+  <button @click="savePack">Save this Game Pack</button><br>
+
+  <button @click="getPacks">Import Game Pack</button>
+  <div v-for="pack in packList" :packId="pack.pack_id">
+    {{pack.name}} <button @click="getPack(pack.pack_id)">Use Pack</button>
+  </div>
+
+  <p>Use the Del key to remove an object. Use the space bar to move an object from the open area to the secret area (or vice versa).</p>
 
   <canvas id="openCanvas" :width="board.width" :height="board.height"></canvas>
   <canvas id="secretCanvas" width="700" height="500"></canvas>

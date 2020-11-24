@@ -70,9 +70,23 @@ app.post('/pack', jsonParser, (req, res, next) => {
 });
 
 app.put('/pack/:id', jsonParser, (req, res, next) => {
-  db.run(`UPDATE Packs SET name=$name, data=$data WHERE pack_id=$packId`, {$data: JSON.stringify(req.body), $packId: req.params.id. $name: req.body.gameName}, function(err) {
+  db.run(`UPDATE Packs SET name=$name, data=$data WHERE pack_id=$packId`, {$data: JSON.stringify(req.body), $packId: req.params.id, $name: req.body.gameName}, function(err) {
     console.log('Updated pack with ID: ',this.lastID);
     res.sendStatus(err ? 400 : 200)
+  })
+})
+
+app.get('/pack', (req, res, next) => {
+  db.all(`SELECT pack_id, name FROM Packs`, (err, rows) => {
+    if (err) return res.sendStatus(500);
+    else res.json(rows);
+  })
+});
+
+app.get('/pack/:id', (req, res, next) => {
+  db.get(`SELECT data FROM Packs WHERE pack_id=$id`, {$id: req.params.id}, (err, row) => {
+    if (err) return res.sendStatus(500);
+    else res.send(row.data)
   })
 })
 

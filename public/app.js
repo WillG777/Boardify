@@ -153,8 +153,8 @@ Vue.component('deck-user', {
       <div v-if="active">
         <p>Actions for deck: {{deckName}}</p>
         <button @click="shuffle">Shuffle</button>
-        <button @click="dealUpCard">Deal Up Card</button>
-        <button @click="dealDownCard">Deal Down Card</button>
+        <button @click="dealCard('up')">Deal Up Card</button>
+        <button @click="dealCard('down')">Deal Down Card</button>
         <button @click="active=false">Done</button>
       </div>
     </div>
@@ -171,7 +171,7 @@ Vue.component('deck-user', {
     shuffle() {
       this.$root.decks[this.deckId].cards = shuffle(this.$root.decks[this.deckId].cards);
     },
-    dealUpCard() {
+    dealCard(side='up') {
       const deck = this.$root.decks[this.deckId];
       const card = deck.cards[this.cardIndex++];
       if (card === undefined) {
@@ -180,11 +180,12 @@ Vue.component('deck-user', {
         }
         return;
       }
+      const canv = side === 'up' ? window.canvas : window.secret;
       if (card.type === 'image')
         fabric.Image.fromURL(card.frontImage, img => {
           img.set({left: 0, top: 0});
           img.scaleToHeight(deck.cardHeight);
-          window.canvas.add(img);
+          canv.add(img);
         });
       else if (card.type === 'text') {
         let text = new fabric.Textbox(card.frontText, {
@@ -194,17 +195,8 @@ Vue.component('deck-user', {
           textboxBorderColor: 'black',
           padding: deck.cardHeight / 2 - 20
         });
-        window.canvas.add(text)
+        canv.add(text)
       }
-    },
-    dealDownCard() {
-      const deck = this.$root.decks[this.deckId];
-      const card = deck.cards[this.cardIndex++];
-      fabric.Image.fromURL(card.frontImage, img => {
-        img.set({left: 0, top: 0});
-        img.scaleToHeight(deck.cardHeight);
-        window.secret.add(img);
-      });
     }
   }
 });
@@ -350,7 +342,8 @@ const app = new Vue({
     ],
     curDeckId: 0,
     packId: null,
-    gameName: ''
+    gameName: '',
+    packList: []
   },
   methods: {
     addPlayer() {
@@ -439,6 +432,36 @@ const app = new Vue({
     },
     removeObject() {
       canvas.remove(canvas.getActiveObject());
+      secret.remove(secret.getActiveObject());
+    },
+    moveObject() {
+      var obj = window.canvas.getActiveObject() || window.secret.getActiveObject();
+      if (!obj) return; // space pressed elsewhere
+      var toCanv = window.canvas.getActiveObject() ? window.secret : window.canvas;
+      var fromCanv = toCanv === window.secret ? window.canvas : window.secret;
+      var img = new fabric.Image(obj._element,
+        pick('width', 'height', 'scaleX', 'scaleY')(obj)
+      );
+      console.log('Moving Image',img);
+      fromCanv.remove(fromCanv.getActiveObject());
+      toCanv.add(img);
+    },
+    deselect(canv) {
+      console.log('deselecting canvas: '+canv);
+      canv = canv==='open' ? window.canvas : window.secret;
+      canv.discardActiveObject();
+      canv.requestRenderAll();
+    },
+    getPacks() {
+      fetch(baseUrl+'/pack').then(res => res.json())
+      .then(rows => {
+        rows.forEach(row => {
+          packList.push(row);
+        })
+      })
+    },
+    getPack(id) {
+      fetch(baseUrl+'/pack/'+id).then(res => console.log(res));
     }
   },
   mounted() {
@@ -447,8 +470,13 @@ const app = new Vue({
 
     // have to do this with vanillaJS so event fires even when no focus on an element
     window.addEventListener('keyup', e => {
-      if (e.key === 'Delete' || e.key === 'Backspace') this.removeObject()
-    })
+      if (e.key === 'Delete' || e.key === 'Backspace') this.removeObject();
+      if (e.key === ' ') this.moveObject();
+    });
+
+    window.canvas.on('selection:created', e => this.deselect('secret'));
+    window.secret.on('selection:created', e => this.deselect('open'));
+
   }
 });
 
