@@ -57,6 +57,7 @@ Vue.component('card-adder', {
         Front: <input type="text" v-model="card.frontText" @blur="updateCard"><br>
         Back: <input type="text" v-model="card.backText" @blur="updateCard">
       </div>
+      <button @click="deleteCard">Delete</button>
     </div>
   `,
   props: {
@@ -97,6 +98,9 @@ Vue.component('card-adder', {
         this.updateCard();
       };
       reader.readAsDataURL(file);
+    },
+    deleteCard() {
+      this.$parent.cards.splice(this.index, 1);
     }
   }
 
@@ -116,13 +120,19 @@ Vue.component('deck-editor', {
       </div>
     </div>
   `,
-  props: {deckId: {type: Number, default: 0}},
+  props: {
+    deckId: {type: Number, default: 0},
+    _name: {type: String, default: ''},
+    _cards: {type: Array, default: ()=>[]},
+    _cardWidth: {type: Number, default: 200},
+    _cardHeight: {type: Number, default: 320}
+  },
   data() {return {
-    cards: [],
-    name: '',
     active: false,
-    cardWidth: 200,
-    cardHeight: 320
+    name: this._name,
+    cards: this._cards,
+    cardWidth: this._cardWidth,
+    cardHeight: this._cardHeight
   }},
   methods: {
     closeDeck() {
@@ -318,8 +328,7 @@ const app = new Vue({
   el: '#app',
   data: {
     players: [ // empty this for finished version
-      {name: 'John', info: '$1500'},
-      {name: 'Bob', info: '$1200, CT Ave'}
+      {name: 'New Player', info: 'Info Here'}
     ],
     roomId: '',
     board: {
@@ -328,9 +337,9 @@ const app = new Vue({
       height: 700
     },
     pieces: [], // array of piece images
-    decks: {
-      '0': {name: '', cards: []}
-    }, // objects of form {name: '', cards: []}
+    decks: [
+      {name: '', cards: []}
+    ], // objects of form {name: '', cards: []}
     dice: [
       {
       type: '',
@@ -340,7 +349,6 @@ const app = new Vue({
       numRepeat: 1
       }
     ],
-    curDeckId: 0,
     packId: null,
     gameName: '',
     packList: []
@@ -356,7 +364,7 @@ const app = new Vue({
     },
     createDeck() {
       // TODO get next deckID from backend
-      Vue.set(this.decks, ++this.curDeckId, {name: '', cards: [], cardWidth: 200, cardHeight: 320});
+      this.decks.push({name: '', cards: [], cardWidth: 200, cardHeight: 320});
     },
     createDice() {
       this.dice.push({
@@ -439,9 +447,18 @@ const app = new Vue({
       if (!obj) return; // space pressed elsewhere
       var toCanv = window.canvas.getActiveObject() ? window.secret : window.canvas;
       var fromCanv = toCanv === window.secret ? window.canvas : window.secret;
-      var img = new fabric.Image(obj._element,
-        pick('width', 'height', 'scaleX', 'scaleY')(obj)
-      );
+      var img;
+      if (obj._element) { // object is an image
+        img = new fabric.Image(obj._element,
+          pick('width', 'height', 'scaleX', 'scaleY')(obj)
+        );
+      } else { // object is text
+        img = new fabric.Textbox(obj.text,
+          pick('hasBorders', 'borderColor', 'showTextBoxBorder', 'textboxBorderColor', 'width', 'height', 'padding')(obj)
+        );
+        // img.set({left: posX, top: 0});
+      }
+
       console.log('Moving Image',img);
       fromCanv.remove(fromCanv.getActiveObject());
       toCanv.add(img);
@@ -456,12 +473,21 @@ const app = new Vue({
       fetch(baseUrl+'/pack').then(res => res.json())
       .then(rows => {
         rows.forEach(row => {
-          packList.push(row);
+          this.packList.push(row);
         })
       })
     },
     getPack(id) {
-      fetch(baseUrl+'/pack/'+id).then(res => console.log(res));
+      fetch(baseUrl+'/pack/'+id).then(res => res.json())
+      .then(res => {
+        res = JSON.parse(res);
+        console.log(res);
+        this.board = res.board;
+        res.decks.forEach(deck => this.decks.push(deck));
+        res.dice.forEach(die => this.dice.push(die));
+        res.pieces.forEach(piece => this.pieces.push(piece));
+        this.gameName = res.gameName;
+      });
     }
   },
   mounted() {

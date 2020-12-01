@@ -8,3 +8,13 @@ html {
 canvas {
   border: 1px solid black;
 }
+.deckEditor, #diceEditors {
+  padding: 5px;
+  margin: 5px 0px;
+  border: 2px solid #888;
+  border-radius: 5px;
+  width: max-content;
+}
+.cardAdder, .diceEditor {
+  margin: 10px 0px;
+}

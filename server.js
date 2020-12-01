@@ -86,7 +86,7 @@ app.get('/pack', (req, res, next) => {
 app.get('/pack/:id', (req, res, next) => {
   db.get(`SELECT data FROM Packs WHERE pack_id=$id`, {$id: req.params.id}, (err, row) => {
     if (err) return res.sendStatus(500);
-    else res.send(row.data)
+    else res.json(row.data)
   })
 })
 
