@@ -157,7 +157,7 @@ Vue.component('deck-editor', {
     },
     deleteDeck() {
       this.$root.decks.splice(
-        this.$root.decks.findIndex(d => d.name === this.name && d.cards === this.cards), 1
+        this.$root.decks.findIndex(d => d.deckId === this.deckId), 1
       );
     }
   }
@@ -247,11 +247,12 @@ Vue.component('dice-editor', {
           <input type="file" accept="image/*" multiple>
         </div>
         <label for="numRepeat">How many of these?</label><input type="number" name="numRepeat" v-model="numRepeat" value=1>
+        <button @click="deleteDice">Delete this dice</button>
         <button @click="saveDice">Done</button>
       </div>
     </div>
   `,
-  props: {diceId: {type: Number, default: 0}},
+  props: {diceId: {type: Number, default: 0}, index: {type: Number, default: 0}},
   data() {return {
     type: '',
     name: '',
@@ -270,7 +271,12 @@ Vue.component('dice-editor', {
     saveDice() {
       this.active = false;
       this.numRepeat = parseInt(this.numRepeat);
-      Vue.set(this.$root.dice, this.diceId, pick('type', 'name', 'minNum', 'maxNum', 'customArray', 'numRepeat')(this))
+      Vue.set(this.$root.dice, this.index, pick('type', 'name', 'minNum', 'maxNum', 'customArray', 'numRepeat', 'diceId')(this))
+    },
+    deleteDice() {
+      this.$root.dice.splice(
+        this.$root.dice.findIndex(d => d.diceId === this.diceId), 1
+      );
     }
   }
 });
@@ -357,7 +363,8 @@ const app = new Vue({
       minNum: 1,
       maxNum: 6,
       name: '',
-      numRepeat: 1
+      numRepeat: 1,
+      diceId: 0
       }
     ],
     packId: null,
@@ -384,7 +391,8 @@ const app = new Vue({
         minNum: 1,
         maxNum: 6,
         name: '',
-        numRepeat: 1
+        numRepeat: 1,
+        diceId: this.dice.length
       });
     },
     savePack() {

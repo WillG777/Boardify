@@ -32,8 +32,8 @@
 
   <div id="diceEditors">
     <button @click="createDice" v-if="dice[0].type">Create Dice</button>
-    <dice-editor v-for="(die, index) in dice" :key="'dice-'+index+'-editor'" :dice-id="index"></dice-editor>
-    <dice-roller v-for="(die, index) in dice" :key="`dice-${index}-roller`" v-bind="die" v-if="die.type"></dice-roller>
+    <dice-editor v-for="(die, index) in dice" :key="'dice-'+die.diceId+'-editor'" :dice-id="die.diceId" :index="index"></dice-editor>
+    <dice-roller v-for="(die, index) in dice" :key="`dice-${die.diceId}-roller`" v-bind="die" v-if="die.type"></dice-roller>
   </div>
 
 
