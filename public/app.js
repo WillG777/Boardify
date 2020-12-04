@@ -80,7 +80,7 @@ Vue.component('card-adder', {
   }},
   methods: {
     updateCard() {
-      this.$parent.cards[this.index] = this.card
+      Object.assign(this.$parent.cards[this.index], this.card); // preserve cardId
     },
     uploadImage(e, isFront) { // TODO combine with app image methods
       var files = e.target.files || e.dataTransfer.files;
@@ -114,8 +114,9 @@ Vue.component('deck-editor', {
         <label for="deckName">Deck name: </label><input type="text" id="deckName" v-model="name"><br>
         <label for="cardWidth">Card width: </label><input type="number" id="cardWidth" v-model="cardWidth">
         <label for="cardHeight">Card height: </label><input type="number" id="cardHeight" v-model="cardHeight"><br>
-        <card-adder :deck-id="deckId" v-for="(card, index) in cards" v-bind="card" :key="index" :index="index"></card-adder>
+        <card-adder :deck-id="deckId" v-for="(card, index) in cards" v-bind="card" :key="card.cardId" :index="index"></card-adder>
         <button @click="newCard">New Card</button>
+        <button @click="deleteDeck">Delete This Deck</button>
         <button @click="closeDeck">Done</button>
       </div>
     </div>
@@ -136,12 +137,12 @@ Vue.component('deck-editor', {
   }},
   methods: {
     closeDeck() {
-      this.$root.decks[this.deckId] = {
+      Object.assign(this.$root.decks.find(deck => deck.deckId === this.deckId), {
         cards: this.cards,
         name: this.name,
         cardWidth: this.cardWidth,
         cardHeight: this.cardHeight
-      };
+      });
       this.active = false;
     },
     newCard() {
@@ -150,8 +151,14 @@ Vue.component('deck-editor', {
         frontImage: '',
         backImage: '',
         frontText: '',
-        backText: ''
+        backText: '',
+        cardId: `card-${this.deckId}-${this.cards.length}`
       });
+    },
+    deleteDeck() {
+      this.$root.decks.splice(
+        this.$root.decks.findIndex(d => d.name === this.name && d.cards === this.cards), 1
+      );
     }
   }
 });
@@ -175,7 +182,11 @@ Vue.component('deck-user', {
     cardIndex: 0
   }},
   computed: {
-    deckName() {return this.$root.decks[this.deckId].name}
+    deckName() {
+      // this will throw a TypeError when the deck is deleted, but that doesn't matter since this component is deleted right after that happens
+      try {return this.$root.decks[this.deckId].name}
+      catch(e) {console.log('Oh no!',e,'Anyway...'); return 'New Deck'}
+    }
   },
   methods: {
     shuffle() {
@@ -338,8 +349,8 @@ const app = new Vue({
     },
     pieces: [], // array of piece images
     decks: [
-      {name: '', cards: []}
-    ], // objects of form {name: '', cards: []}
+      {name: '', cards: [], cardWidth: 200, cardHeight: 320, deckId: 0}
+    ],
     dice: [
       {
       type: '',
@@ -364,7 +375,8 @@ const app = new Vue({
     },
     createDeck() {
       // TODO get next deckID from backend
-      this.decks.push({name: '', cards: [], cardWidth: 200, cardHeight: 320});
+      this.decks.push({name: '', cards: [], cardWidth: 200, cardHeight: 320,
+        deckId: this.decks.length});
     },
     createDice() {
       this.dice.push({
