@@ -1,5 +1,6 @@
 # Boardify
 A site that allows people to create board games and play them virtually
+
 Just a prototype for now, hoping to add connectivity features soon
 ![Preview Image](https://i.imgur.com/WeEZLPw.png)
 
